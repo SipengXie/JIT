@@ -72,7 +72,7 @@ pub fn get_benches() -> Vec<Bench> {
         Bench {
             name: "hash_10k",
             bytecode: include_code_str!("../../../data/hash_10k.rt.hex").unwrap(),
-            calldata: hex!("30627b7c").to_vec(),
+            calldata: hex!("dc6bf8a7000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000021234000000000000000000000000000000000000000000000000000000000000").to_vec(),
             ..Default::default()
         },
         Bench {
