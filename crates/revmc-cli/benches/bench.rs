@@ -4,7 +4,7 @@ use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, Criterion,
 };
 use revm_interpreter::SharedMemory;
-use revm_primitives::{Env, SpecId};
+use revm_primitives::{b256, Env, SpecId, U256};
 use revmc::{llvm, EvmCompiler, EvmCompilerFn, EvmContext, EvmLlvmBackend, EvmStack};
 use revmc_cli::Bench;
 use std::time::Duration;
@@ -14,9 +14,6 @@ const SPEC_ID: SpecId = SpecId::OSAKA;
 fn bench(c: &mut Criterion) {
     for bench in &revmc_cli::get_benches() {
         run_bench(c, bench);
-        if matches!(bench.name, "hash_10k-eof") {
-            break;
-        }
     }
 }
 
@@ -35,9 +32,14 @@ fn run_bench(c: &mut Criterion, bench: &Bench) {
         revm_primitives::Bytes::copy_from_slice(bytecode),
     ));
     let contract = revm_interpreter::Contract::new_env(&env, bytecode, None);
-    let mut host = revm_interpreter::DummyHost::new(env);
+    let mut host = revm_interpreter::DummyHost::new(env.clone());
 
     let bytecode = contract.bytecode.original_byte_slice();
+
+    if *name == "erc20_runtime" {
+        host.storage.insert(b256!("d2869508550c71a0ebfe05ddd28ce832b357803f6f387154b1a5451da28aca19").into(), U256::from(10000000000 as u64));
+        host.storage.insert(b256!("ac0ab67043ecc9a2f17c6f6ba97786b2b1051a49d0101c2e2da0641d9a0e6da7").into(), U256::from(9900000000 as u64));
+    }
 
     let table = &revm_interpreter::opcode::make_instruction_table::<
         revm_interpreter::DummyHost,
@@ -85,6 +87,12 @@ fn run_bench(c: &mut Criterion, bench: &Bench) {
     for &(name, fn_id) in &jit_ids {
         let jit = unsafe { compiler.jit_function(fn_id) }.expect(name);
         g.bench_function(format!("revmc/{name}"), |b| b.iter(|| call_jit(jit)));
+    }
+
+    let mut host = revm_interpreter::DummyHost::new(env);
+    if *name == "erc20_transfer" {
+        host.storage.insert(b256!("d2869508550c71a0ebfe05ddd28ce832b357803f6f387154b1a5451da28aca19").into(), U256::from(10000000000 as u64));
+        host.storage.insert(b256!("ac0ab67043ecc9a2f17c6f6ba97786b2b1051a49d0101c2e2da0641d9a0e6da7").into(), U256::from(9900000000 as u64));
     }
 
     g.bench_function("revm-interpreter", |b| {
