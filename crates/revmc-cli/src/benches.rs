@@ -66,6 +66,7 @@ pub fn get_benches() -> Vec<Bench> {
         Bench {
             name: "weth",
             bytecode: include_code_str!("../../../data/weth.rt.hex").unwrap(),
+            calldata: hex!("6b7c477a").to_vec(),
             ..Default::default()
         },
         Bench {
